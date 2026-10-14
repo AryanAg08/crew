@@ -19,8 +19,9 @@ type Task struct {
 	ID        string    `json:"id"`
 	Project   string    `json:"project"`
 	Worktree  string    `json:"worktree"`
-	Session   string    `json:"session"`   // tmux session name
-	ClaudeID  string    `json:"claude_id"` // claude --session-id, used to resume
+	Session   string    `json:"session"`          // tmux session name
+	ClaudeID  string    `json:"claude_id"`        // claude --session-id, used to resume
+	Branch    string    `json:"branch,omitempty"` // released branch, checked out again on open
 	CreatedAt time.Time `json:"created_at"`
 }
 

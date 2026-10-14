@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
+	"strings"
+	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -42,9 +45,33 @@ func main() {
 	} else if len(os.Args) == 3 && os.Args[1] == "--sidebar" { // runs inside each claude session's left pane
 		prog = tea.NewProgram(newSidebar(os.Args[2]), tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithReportFocus())
 	} else {
-		prog = tea.NewProgram(newModel(st), tea.WithAltScreen())
+		runHome(st)
+		return
 	}
 	if _, err := prog.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "crew:", err)
+		os.Exit(1)
+	}
+}
+
+// runHome runs the main screen. On exit, unless another crew screen is open,
+// it stops the sessions and frees their branches for use outside crew.
+func runHome(st *State) {
+	registerInstance()
+	prog := tea.NewProgram(newModel(st), tea.WithAltScreen())
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGTERM) // terminal closed: still clean up
+	go func() { <-sig; prog.Quit() }()
+
+	_, err := prog.Run()
+	os.Remove(instanceFile())
+	if !otherInstances() {
+		if lines := releaseAll(); len(lines) > 0 {
+			fmt.Println("crew stopped its sessions. These branches are free to open in your editor:")
+			fmt.Println(strings.Join(lines, "\n"))
+		}
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "crew:", err)
 		os.Exit(1)
 	}

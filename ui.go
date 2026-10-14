@@ -179,7 +179,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) updateHome(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "q", "ctrl+c":
-		return m, tea.Quit
+		return m.quit()
 	case "up", "k":
 		m.homeCur = clamp(m.homeCur-1, len(m.st.Projects)-1)
 	case "down", "j":
@@ -219,7 +219,7 @@ func (m model) updateProject(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	tasks := m.st.tasksOf(m.proj)
 	switch k.String() {
 	case "q", "ctrl+c":
-		return m, tea.Quit
+		return m.quit()
 	case "esc", "left", "h", "backspace":
 		m.screen, m.msg = screenHome, ""
 	case "up", "k":
@@ -252,6 +252,27 @@ func (m model) updateProject(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return doneMsg{text: "deleted " + label}
 		}
 	}
+	return m, nil
+}
+
+// quit asks first when sessions are running: quitting stops them and frees
+// their branches (unless another crew screen is still open).
+func (m model) quit() (tea.Model, tea.Cmd) {
+	running := 0
+	for _, t := range m.st.Tasks {
+		if m.live[t.Session] {
+			running++
+		}
+	}
+	if running == 0 || otherInstances() {
+		return m, tea.Quit
+	}
+	what := fmt.Sprintf("%d running sessions and frees their branches", running)
+	if running == 1 {
+		what = "1 running session and frees its branch"
+	}
+	m.confirm = "Quit crew? This stops " + what + " for your editor. (y/n)"
+	m.mode, m.onYes = modeConfirm, tea.Quit
 	return m, nil
 }
 
@@ -552,7 +573,7 @@ func (m model) viewProject(b *strings.Builder) {
 
 	branchW := len("no branch yet")
 	for _, t := range tasks {
-		branchW = max(branchW, len(currentBranch(t.Worktree)))
+		branchW = max(branchW, len(taskBranch(t)))
 	}
 	branchW = min(branchW, 30)
 	for i, t := range tasks {
@@ -561,7 +582,7 @@ func (m model) viewProject(b *strings.Builder) {
 		if !ok {
 			st = dimStyle
 		}
-		br := currentBranch(t.Worktree)
+		br := taskBranch(t)
 		brText := fmt.Sprintf("%-*s", branchW, truncate(br, branchW))
 		if br == "" {
 			brText = dimStyle.Render(fmt.Sprintf("%-*s", branchW, "no branch yet"))

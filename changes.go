@@ -72,7 +72,7 @@ func upstream(t Task) string {
 	if u, err := run(t.Worktree, "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"); err == nil {
 		return u
 	}
-	if br := currentBranch(t.Worktree); br != "" {
+	if br := taskBranch(t); br != "" {
 		if _, err := run(t.Worktree, "git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+br); err == nil {
 			return "origin/" + br
 		}
@@ -384,7 +384,7 @@ func (c changesView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c changesView) View() string {
-	br := currentBranch(c.t.Worktree)
+	br := taskBranch(c.t)
 	if br == "" {
 		br = "no branch yet"
 	}

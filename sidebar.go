@@ -346,7 +346,7 @@ func (s sidebar) render() (lines []string, lineOf []int) {
 		if t.ID == s.current {
 			bar = currentBar
 		}
-		br := currentBranch(t.Worktree)
+		br := taskBranch(t)
 		if br == "" {
 			br = "no branch yet"
 		}

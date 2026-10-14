@@ -62,6 +62,10 @@ pushed yet) and *Pushed*.
 
 - Sessions are tmux sessions named `crew_*`, each running `claude` in its own
   worktree under `~/.crew/worktrees/`.
+- Quitting crew (`q`) stops its sessions and frees their branches, so you can
+  check them out in any editor. Each session's folder, uncommitted changes
+  included, is kept; opening the session again checks its branch back out and
+  resumes the same conversation.
 - Live status (working, idle, needs input) comes from Claude Code hooks that crew
   passes with `--settings`; your own settings are not changed. You get a macOS
   notification when a session needs input.

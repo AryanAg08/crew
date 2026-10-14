@@ -156,6 +156,9 @@ func resumeTask(p Project, t Task) error {
 	if _, err := os.Stat(t.Worktree); err != nil {
 		return fmt.Errorf("worktree missing: %s", t.Worktree)
 	}
+	if err := reattach(t); err != nil {
+		return err
+	}
 	// Resume the newest conversation in this worktree (it changes after /clear).
 	resume := []string{"--session-id", t.ClaudeID} // claude exited before saving anything
 	if p := transcriptPath(t.Worktree, t.ClaudeID); p != "" && filepath.Dir(p) == claudeDir(t.Worktree) {
